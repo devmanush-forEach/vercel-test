@@ -1,19 +1,50 @@
 const express = require("express");
+const cors = require("cors");
+require("dotenv").config();
+const connectToDB = require("./src/configs/db");
+const SigninController = require("./src/controllers/signin.controller");
+const SignupController = require("./src/controllers/signup.controller");
+const UserRoutes = require("./src/routes/user.routes");
+const PlanRoutes = require("./src/routes/plan.routes");
+const PaymentRoutes = require("./src/routes/payment.routes");
+const cookieParser = require("cookie-parser");
+const SignoutController = require("./src/controllers/signout.controller");
+const Authenticate = require("./src/middlewares/authenticate");
+const multer = require("multer");
+const upload = require("./src/middlewares/multer");
+
+const port = process.env.PORT;
+const origin = process.env.ORIGIN;
 
 const app = express();
+app.options(origin, cors({ origin: origin, credentials: true }));
 
-app.use(express.json());
-
-app.use("/home", (req, res) => {
-  res.send({ message: "working fine home route", success: true });
+app.use(express.static("public"));
+app.use(
+  cors({
+    origin: origin,
+    credentials: true,
+  })
+);
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", origin);
+  res.header("Access-Control-Allow-Headers", "Content-Type, x-requested-with");
+  next();
 });
+app.use(express.json());
+app.use(cookieParser());
+app.use("/user", UserRoutes);
+app.use("/signin", SigninController);
+app.use("/signup", upload.single("profile"), SignupController);
+app.use("/signout", Authenticate, SignoutController);
+app.use("/plan", PlanRoutes);
+app.use("/payment", PaymentRoutes);
 
 app.use("/", (req, res) => {
-  res.send({ message: "working fine", success: true });
+  res.status(200).send("WORKING FINE");
 });
 
-const PORT = 4000;
-
-app.listen(PORT, () => {
-  console.log("server is working fine");
+app.listen(port, () => {
+  connectToDB();
+  console.log(`Server is listening on port ${port}`);
 });
